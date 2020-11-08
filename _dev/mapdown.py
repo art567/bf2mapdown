@@ -26,7 +26,7 @@ URL = 'https://docs.google.com/spreadsheets/d/1D7wGcD4TLhRF_WUKvXmQ21S3Qn2T7NZov
 FILE = 'maplist_{:name:}.con'
 
 # Maplist to download:
-NAME = 'Wiror'
+NAME = 'Default'
 
 # Rotation to download:
 ROTATION = ROTATION_ANY
@@ -232,18 +232,21 @@ def main():
     print('MapDown started')
     arg = 1
     argc = len(sys.argv)
-    while (arg < argc):
-        line = sys.argv[arg]
-        larr = line.split(':')
-        name = larr[0]
-        rotation = ROTATION_ANY
-        if (len(larr) > 1):
-            rotation = larr[1]
-        try:
-            dl_maplist(name, rotation)
-        except:
-            pass
-        arg += 1
+    if (argc <= 1):
+        dl_maplist(NAME)
+    else:
+        while (arg < argc):
+            line = sys.argv[arg]
+            larr = line.split(':')
+            name = larr[0]
+            rotation = ROTATION_ANY
+            if (len(larr) > 1):
+                rotation = larr[1]
+            try:
+                dl_maplist(name, rotation)
+            except:
+                pass
+            arg += 1
     print('Finished.')
 
 if __name__ == '__main__':
