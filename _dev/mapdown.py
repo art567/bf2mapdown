@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Google Maplist Downloader
-# Version: 1.1
+# Version: 1.2
 # BF2 v1.50
 # $c Tema567
 # http://github.com/art567/bf2mapdown/
@@ -175,12 +175,40 @@ def parse(f):
             #print('%s' % m.getLine())
     return m_items
 
-# This is main method of the program.
-# Download file from URL and write out result.
-def main():
-    global NAME, URL, FILE, ROTATION, ROTATION_ANY
-    input_url = URL.replace("{:name:}", NAME.lower())
-    out_fname = FILE.replace("{:name:}", NAME.lower())
+def get_rotation(data):
+    ''' This method returns numeric rotation identifier '''
+    if ( type(data) is int ):
+        n = data
+        d = n
+        if (d <= 0):
+            n = 0
+        elif (d > 0) and (d <= 16):
+            n = 16
+        elif (d > 16) and (d <= 32):
+            n = 32
+        else:
+            n = 64
+        return n
+    elif ( type(data) is str ):
+        s = data.strip('"').lower().replace(" ", "_")
+        # correcting rotation type
+        if (s.startswith('small') or s.startswith('inf') or s.startswith('16')):
+            s = '16'
+        elif (s.startswith('med') or s.startswith('medium') or s.startswith('32')):
+            s = '32'
+        elif (s.startswith('full') or s.startswith('big') or s.startswith('64')):
+            s = '64'
+        else:
+            s = '0'
+        # all looking good?
+        return int('%s' % s)
+
+def dl_maplist(name, rotation = ROTATION, url = URL, file = FILE ):
+    ''' This method downloads single maplist from URL and write out result '''
+    global ROTATION_ANY
+    input_rot = get_rotation(rotation)
+    input_url = url.replace("{:name:}", name.lower())
+    out_fname = file.replace("{:name:}", name.lower())
     csvdata = dlfile(input_url)
     #print(csvdata.decode('utf-8'))
     csv = io.BytesIO(csvdata)
@@ -191,12 +219,31 @@ def main():
     totalnum = 0
     print('Converting to BF2 format: \n - %d map lines found in maplist' % len(maplist))
     for m in maplist:
-        if (m.rotation == ROTATION or ROTATION == ROTATION_ANY):
+        if (input_rot == m.rotation or input_rot == ROTATION_ANY):
             totalnum += 1
             confile.write('%s\n' % m.getLine())
             #print('%s' % m.getLine())
     print(' - %d map lines to be used' % totalnum)
     print('Result written to %s' % out_fname)
+
+def main():
+    ''' This is main method of the program '''
+    global ROTATION_ANY
+    print('MapDown started')
+    arg = 1
+    argc = len(sys.argv)
+    while (arg < argc):
+        line = sys.argv[arg]
+        larr = line.split(':')
+        name = larr[0]
+        rotation = ROTATION_ANY
+        if (len(larr) > 1):
+            rotation = larr[1]
+        try:
+            dl_maplist(name, rotation)
+        except:
+            pass
+        arg += 1
     print('Finished.')
 
 if __name__ == '__main__':
