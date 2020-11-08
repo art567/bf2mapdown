@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # Google Maplist Downloader
-# Version: 1.0
+# Version: 1.1
 # BF2 v1.50
 # $c Tema567
-# http://github.com/art567/mapdown/
+# http://github.com/art567/bf2mapdown/
 
 import io
 import os
@@ -17,10 +17,18 @@ ROTATION_ANY = 0
 ROTATION_SMALL = 16
 ROTATION_MEDIUM = 32
 ROTATION_BIG = 64
+ROTATION_LARGE = 128
 
-# Download some MapList
-URL = 'https://docs.google.com/spreadsheets/d/1D7wGcD4TLhRF_WUKvXmQ21S3Qn2T7NZovSdt-AglTLA/gviz/tq?tqx=out:csv&sheet=Wiror'
-FILE = 'maplist_test.con'
+# URL of Google Docs sheet:
+URL = 'https://docs.google.com/spreadsheets/d/1D7wGcD4TLhRF_WUKvXmQ21S3Qn2T7NZovSdt-AglTLA/gviz/tq?tqx=out:csv&sheet={:name:}'
+
+# File to save:
+FILE = 'maplist_{:name:}.con'
+
+# Maplist to download:
+NAME = 'Wiror'
+
+# Rotation to download:
 ROTATION = ROTATION_ANY
 
 class MapItem():
@@ -170,9 +178,9 @@ def parse(f):
 # This is main method of the program.
 # Download file from URL and write out result.
 def main():
-    global URL, FILE, ROTATION, ROTATION_ANY
-    input_url = URL # 'https://docs.google.com/spreadsheets/d/{key}/gviz/tq?tqx=out:csv&sheet=0'
-    out_fname = FILE # 'maplist.con'
+    global NAME, URL, FILE, ROTATION, ROTATION_ANY
+    input_url = URL.replace("{:name:}", NAME.lower())
+    out_fname = FILE.replace("{:name:}", NAME.lower())
     csvdata = dlfile(input_url)
     #print(csvdata.decode('utf-8'))
     csv = io.BytesIO(csvdata)
@@ -180,11 +188,14 @@ def main():
     #csv=fopen(csv_fname)
     maplist = parse(csv)
     confile = open(out_fname,'w')
-    print('Converting to BF2 format: %d map lines found' % len(maplist))
+    totalnum = 0
+    print('Converting to BF2 format: \n - %d map lines found in maplist' % len(maplist))
     for m in maplist:
         if (m.rotation == ROTATION or ROTATION == ROTATION_ANY):
+            totalnum += 1
             confile.write('%s\n' % m.getLine())
             #print('%s' % m.getLine())
+    print(' - %d map lines to be used' % totalnum)
     print('Result written to %s' % out_fname)
     print('Finished.')
 
