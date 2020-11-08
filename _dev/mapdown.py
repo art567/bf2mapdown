@@ -12,23 +12,34 @@ import csv
 import urllib2
 from urllib2 import urlopen, URLError, HTTPError
 
-# Download Drakosha MapList
-URL = 'https://docs.google.com/spreadsheets/d/1_-lk7DWqkx5EqBRygRg_skUVV2JI3EEHCkDqhZ3uHrw/gviz/tq?tqx=out:csv&sheet=0'
-FILE = 'maplist_drakosha.con'
+# Define types of rotation
+ROTATION_ANY = 0
+ROTATION_SMALL = 16
+ROTATION_MEDIUM = 32
+ROTATION_BIG = 64
+
+# Download some MapList
+URL = 'https://docs.google.com/spreadsheets/d/1D7wGcD4TLhRF_WUKvXmQ21S3Qn2T7NZovSdt-AglTLA/gviz/tq?tqx=out:csv&sheet=Wiror'
+FILE = 'maplist_test.con'
+ROTATION = ROTATION_ANY
 
 class MapItem():
     def __init__(self):
+        ''' This is map item constructor '''
         self.id = None
         self.valid = False
         self.mapname = None
         self.gamemode = None
+        self.rotation = None
         self.size = None
 
     def setId(self, data):
+        ''' This method sets the map item id '''
         i = data.strip('"').lower().replace(" ", "_")
         self.id = int('%s' % i)
 
     def setMap(self, data):
+        ''' This method sets the map item mapname '''
         m = data.strip('"').lower().replace(" ", "_")
         # check if mapname is valid
         if m == "":
@@ -52,6 +63,7 @@ class MapItem():
             self.valid = True
 
     def setGameMode(self, data):
+        ''' This method sets the map item gamemode '''
         g = data.strip('"').lower().replace(" ", "_")
         # correcting gamemode names
         if (g.startswith('singleplayer') or g.startswith('single') or g.startswith('sp')):
@@ -78,16 +90,38 @@ class MapItem():
         self.gamemode = str('%s' % g)
     
     def setSize(self, data):
+        ''' This method sets the map item size '''
         s = data.strip('"').lower().replace(" ", "_")
         try:
             self.size = int('%s' % s)
         except:
             self.size = 0
 
+    def setRotation(self, data):
+        ''' This method sets the map item rotation '''
+        g = data.strip('"').lower().replace(" ", "_")
+        # correcting rotation type
+        if (g.startswith('small') or g.startswith('inf') or g.startswith('16')):
+            g = '16'
+        elif (g.startswith('med') or g.startswith('medium') or g.startswith('32')):
+            g = '32'
+        elif (g.startswith('full') or g.startswith('big') or g.startswith('64')):
+            g = '64'
+        else:
+            g = '0'
+        # all looking good?
+        self.rotation = int('%s' % g)
+
     def getLine(self):
+        ''' This method returns BF2 maplist.con-compliant map line '''
         return ('maplist.append "%s" "%s" "%s"' % (self.mapname, self.gamemode, self.size))
 
+    def isValid(self):
+        ''' This is simple validation for map '''
+        return self.valid
+
 def fopen(infile):
+    ''' This method allow us open file from disk into file variable '''
     f = None
     try:
         assert(type(infile) == '_io.TextIOWrapper')
@@ -96,6 +130,7 @@ def fopen(infile):
     return f
 
 def dlfile(url):
+    ''' This method allow us download file into file variable '''
     f = None
     # Open the url
     try:
@@ -116,6 +151,7 @@ def dlfile(url):
     return f
 
 def parse(f):
+    ''' This method provides csv - to - con file parser '''
     m_items = []
     csvreader = csv.DictReader(f, delimiter=',',quotechar='|', dialect=csv.excel_tab)
     for row in csvreader:
@@ -124,14 +160,17 @@ def parse(f):
         m.setMap(row['"Mapname"'])
         m.setGameMode(row['"Gamemode"'])
         m.setSize(row['"Mapsize"'])
-        m_items.append(m)
-        #print('%s' % m.getLine())
+        m.setRotation(row['"Rotation"'])
+        # only append valid map items
+        if m.isValid():
+            m_items.append(m)
+            #print('%s' % m.getLine())
     return m_items
 
-# for now, just pull the track info and print it onscreen
-# get the M3U file path from the first command line argument
+# This is main method of the program.
+# Download file from URL and write out result.
 def main():
-    global URL, FILE
+    global URL, FILE, ROTATION, ROTATION_ANY
     input_url = URL # 'https://docs.google.com/spreadsheets/d/{key}/gviz/tq?tqx=out:csv&sheet=0'
     out_fname = FILE # 'maplist.con'
     csvdata = dlfile(input_url)
@@ -143,8 +182,9 @@ def main():
     confile = open(out_fname,'w')
     print('Converting to BF2 format: %d map lines found' % len(maplist))
     for m in maplist:
-        confile.write('%s\n' % m.getLine())
-        #print('%s' % m.getLine())
+        if (m.rotation == ROTATION or ROTATION == ROTATION_ANY):
+            confile.write('%s\n' % m.getLine())
+            #print('%s' % m.getLine())
     print('Result written to %s' % out_fname)
     print('Finished.')
 
